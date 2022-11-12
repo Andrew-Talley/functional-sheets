@@ -1,8 +1,6 @@
 import { useInit, useQuery, tx, transact } from "@instantdb/react";
 import React, { createContext, useCallback, useRef, useState } from "react";
-import { parseInput } from "./businenss/parser";
 import { Graph } from "./businenss/graph";
-import { f } from "vitest/dist/index-40e0cb97";
 import { GridCell } from "./GridCell";
 import { graphFactory } from "./GraphFactory";
 
@@ -123,15 +121,19 @@ function App() {
 
   const graphRef = useRef(graphFactory());
 
-  return isLoading ? (
-    "Loading"
-  ) : error ? (
-    "Error: " + error.message
-  ) : (
-    <GraphContext.Provider value={graphRef.current}>
-      <Spreadsheet />
-      <DeleteGridButton />
-    </GraphContext.Provider>
+  return (
+    <>
+      {isLoading ? (
+        "Loading"
+      ) : error ? (
+        "Error: " + error.message
+      ) : (
+        <GraphContext.Provider value={graphRef.current}>
+          <Spreadsheet />
+          <DeleteGridButton />
+        </GraphContext.Provider>
+      )}
+    </>
   );
 }
 
