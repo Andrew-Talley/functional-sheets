@@ -2,6 +2,7 @@ import { useInit, useQuery, tx, transact } from "@instantdb/react";
 import React, { createContext, useCallback, useRef, useState } from "react";
 import { Graph } from "./businenss/graph";
 import { GridCell } from "./GridCell";
+import { Login } from "./Login";
 import { graphFactory } from "./GraphFactory";
 
 export const GraphContext = createContext(new Graph({}));
@@ -123,7 +124,9 @@ function App() {
 
   return (
     <>
-      {isLoading ? (
+      {!auth ? (
+        <Login />
+      ) : isLoading ? (
         "Loading"
       ) : error ? (
         "Error: " + error.message
