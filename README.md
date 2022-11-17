@@ -11,7 +11,7 @@ There are currently some fundamental features missing:
 - [ ] Ability to add more columns/rows (and probably including more by default)
 - [x] Auth
 - [x] Strings
-- [ ] Any sort of styling (maybe Markdown?)
+- [ ] Any sort of styling
 - [ ] Cell ranges
 - [ ] Allowing the creation of multiple spreadsheets
 - [ ] ... any function outside of PEMDAS
