@@ -8,7 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { GraphContext } from "./App";
+import { useGraph } from "./GraphContext";
+import { useCellValue } from "./useCell";
 
 interface EditableGridCellProps {
   initialValue: string;
@@ -56,15 +57,9 @@ interface GridCellProps {
 }
 export const GridCell = memo(
   ({ tabIndex, cell, focused, onClick }: GridCellProps) => {
-    const query = useQuery({ cells: { $: { where: { id: cell } } } });
-    const value = query.cells[0]?.value ?? "";
+    const [value, renderedValue, onChange] = useCellValue(cell);
 
     const [isEditing, setIsEditing] = useState(false);
-
-    const onSubmit = useCallback((value: string) => {
-      transact([tx.cells[cell].update({ value })]);
-      setIsEditing(false);
-    }, []);
 
     const focusRef = useRef<HTMLTableDataCellElement>(null);
 
@@ -75,17 +70,6 @@ export const GridCell = memo(
         focusRef.current?.blur();
       }
     }, [focused]);
-
-    const graph = useContext(GraphContext);
-
-    const [renderedValue, setRenderedValue] = useState(graph.valueOfCell(cell));
-
-    useEffect(() => {
-      if (value) {
-        graph.updateCell(cell, value);
-        setRenderedValue(graph.valueOfCell(cell));
-      }
-    }, [value]);
 
     return (
       <td
@@ -108,7 +92,10 @@ export const GridCell = memo(
         {isEditing ? (
           <EditableGridCell
             initialValue={value}
-            onSubmit={onSubmit}
+            onSubmit={(value) => {
+              onChange(value);
+              setIsEditing(false);
+            }}
             onCancel={() => setIsEditing(false)}
           />
         ) : typeof renderedValue === "object" ? (

@@ -1,4 +1,21 @@
+import React, { createContext, useContext, useRef } from "react";
 import { Graph, Value } from "./businenss/graph";
+
+const GraphContext = createContext(new Graph({}));
+
+export const GraphProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const ref = useRef(graphFactory());
+
+  return (
+    <GraphContext.Provider value={ref.current}>
+      {children}
+    </GraphContext.Provider>
+  );
+};
+
+export const useGraph = () => useContext(GraphContext);
 
 const fns: Record<string, (...args: Value[]) => Value> = {
   ADD: (...args) =>

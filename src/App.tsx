@@ -1,11 +1,9 @@
 import { useInit, useQuery, tx, transact } from "@instantdb/react";
 import React, { createContext, useCallback, useRef, useState } from "react";
-import { Graph } from "./businenss/graph";
 import { GridCell } from "./GridCell";
 import { Login } from "./Login";
-import { graphFactory } from "./GraphFactory";
-
-export const GraphContext = createContext(new Graph({}));
+import { GraphProvider } from "./GraphContext";
+import { AuthProvider } from "./AuthProvider";
 
 function indToCol(ind: number) {
   return String.fromCharCode(ind + "A".charCodeAt(0));
@@ -28,10 +26,6 @@ function DeleteGridButton() {
   };
 
   return <button onClick={deleteAll}>Reset Grid</button>;
-}
-
-function isNumber(val: any): val is number {
-  return typeof val === "number";
 }
 
 function Spreadsheet() {
@@ -91,23 +85,26 @@ function Spreadsheet() {
         </tr>
       </thead>
       <tbody>
-        {Array.from(new Array(10), (_, row) => (
-          <tr key={row}>
-            <td>{row}</td>
-            {Array.from(new Array(10), (_, colInd) => {
-              const cell = `${indToCol(colInd)}${row}`;
-              return (
-                <GridCell
-                  key={cell}
-                  tabIndex={row * 10 + colInd + 1}
-                  onClick={onCellClick}
-                  focused={focusedCol === colInd && focusedRow === row}
-                  cell={cell}
-                />
-              );
-            })}
-          </tr>
-        ))}
+        {Array.from(new Array(10), (_, row_1) => {
+          const row = row_1 + 1;
+          return (
+            <tr key={row}>
+              <td>{row}</td>
+              {Array.from(new Array(10), (_, colInd) => {
+                const cell = `${indToCol(colInd)}${row}`;
+                return (
+                  <GridCell
+                    key={cell}
+                    tabIndex={row * 10 + colInd + 1}
+                    onClick={onCellClick}
+                    focused={focusedCol === colInd && focusedRow === row}
+                    cell={cell}
+                  />
+                );
+              })}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -115,26 +112,26 @@ function Spreadsheet() {
 
 function App() {
   const [isLoading, error, auth] = useInit({
-    appId: "fdb298e3-6a27-4783-ac67-28f8edbbcf59",
+    appId: "7411a2fb-38dd-4ee1-b5ba-c59e3870f034",
     websocketURI: "wss://instant-server-clj.herokuapp.com/api/runtime/sync",
     apiURI: "https://instant-server-clj.herokuapp.com/api",
   });
 
-  const graphRef = useRef(graphFactory());
-
   return (
     <>
-      {!auth ? (
-        <Login />
-      ) : isLoading ? (
+      {isLoading ? (
         "Loading"
       ) : error ? (
         "Error: " + error.message
+      ) : !auth ? (
+        <Login />
       ) : (
-        <GraphContext.Provider value={graphRef.current}>
-          <Spreadsheet />
-          <DeleteGridButton />
-        </GraphContext.Provider>
+        <AuthProvider value={auth}>
+          <GraphProvider>
+            <Spreadsheet />
+            <DeleteGridButton />
+          </GraphProvider>
+        </AuthProvider>
       )}
     </>
   );
