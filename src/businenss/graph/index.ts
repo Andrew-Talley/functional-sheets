@@ -5,7 +5,7 @@ type Error = {
   type: "error";
   errorMessage: string;
 };
-export type Value = number | Error | undefined;
+export type Value = number | string | Error | undefined;
 
 export class Graph {
   derivedFromMap: Record<Cell, Set<Cell>> = {};
@@ -75,6 +75,8 @@ export class Graph {
 
     switch (expression.type) {
       case "number":
+        return expression.value;
+      case "string":
         return expression.value;
       case "cellReference":
         return this.evaluationMap[Graph.#cellFromReference(expression)];

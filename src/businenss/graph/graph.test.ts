@@ -48,6 +48,11 @@ describe("graph", () => {
       expect(graph.valueOfCell("A1")).toBe(2);
     });
 
+    it("will return a string", () => {
+      graph.updateCell("A1", '"str"');
+      expect(graph.valueOfCell("A1")).toBe("str");
+    });
+
     it("will allow clearing a cell", () => {
       graph.updateCell("A1", "2");
       graph.updateCell("A1", "");

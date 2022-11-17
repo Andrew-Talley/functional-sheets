@@ -3,6 +3,11 @@ export interface NumberInput {
   value: number;
 }
 
+export interface StringInput {
+  type: "string";
+  value: string;
+}
+
 export interface CellReferenceInput {
   type: "cellReference";
   column: string;
@@ -24,7 +29,8 @@ export type EquationInput =
   | NumberInput
   | CellReferenceInput
   | FunctionInput
-  | ErrorInput;
+  | ErrorInput
+  | StringInput;
 
 const WS_CHARS = [" ", "\n", "\t", "\r"];
 const WS_REGEX = new RegExp(`[${WS_CHARS.join("")}]+`, "g");
@@ -34,7 +40,7 @@ const NUMBER_REGEX = /[0-9]/;
 const LETTER_REGEX = /[A-Za-z]/;
 
 interface Token {
-  type: "value" | "open-paren" | "close-paren";
+  type: "value" | "open-paren" | "close-paren" | "string";
   value: string;
 }
 
@@ -60,6 +66,14 @@ function tokenizeInput(input: string) {
     } else if (input.charAt(currentIndex) === ")") {
       tokens.push(CLOSE_PAREN_TOKEN);
       currentIndex++;
+    } else if (input.charAt(currentIndex) === '"') {
+      const nextQuotation = input.indexOf('"', currentIndex + 1);
+      const string = input.slice(currentIndex + 1, nextQuotation);
+      tokens.push({
+        type: "string",
+        value: string,
+      });
+      currentIndex = nextQuotation + 1;
     } else {
       const chars = ["(", ")", " "];
       const endIndex = Math.min(
@@ -107,6 +121,11 @@ function generateAst(tokens: Token[]): EquationInput {
       throw new Error("Unexpected tokens after simple value");
     }
     return parseValue(tokens[0].value);
+  } else if (tokens[0].type === "string") {
+    return {
+      type: "string",
+      value: tokens[0].value,
+    };
   } else if (tokens[0].type === "open-paren") {
     const functionName = tokens[1].value.toUpperCase();
 
@@ -149,22 +168,20 @@ function generateAst(tokens: Token[]): EquationInput {
   }
 }
 
-export function parseInput<K extends EquationInput | undefined>(
-  input: string
-): K {
+export function parseInput(input: string): EquationInput | undefined {
   try {
     const whitespaceStrippedInput = input.replace(WS_REGEX, " ");
     const tokens = tokenizeInput(whitespaceStrippedInput);
 
     if (tokens.length === 0) {
-      return undefined as K;
+      return undefined;
     }
 
-    return generateAst(tokens) as K;
+    return generateAst(tokens);
   } catch (e) {
     return {
       type: "error",
       errorMessage: (e as Error).message,
-    } as K;
+    };
   }
 }

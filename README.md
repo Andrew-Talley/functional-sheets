@@ -9,10 +9,11 @@ It's meant to be a functional programming variant of Google Sheets. For example,
 There are currently some fundamental features missing:
 
 - [ ] Ability to add more columns/rows (and probably including more by default)
-- [ ] Auth, and allowing the creation of multiple spread sheets
-- [ ] Strings
+- [x] Auth
+- [x] Strings
 - [ ] Any sort of styling (maybe Markdown?)
 - [ ] Cell ranges
+- [ ] Allowing the creation of multiple spreadsheets
 - [ ] ... any function outside of PEMDAS
 
 On top of that, there are a number of optimizations missing:
