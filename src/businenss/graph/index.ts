@@ -1,11 +1,16 @@
-import { CellReferenceInput, EquationInput, parseInput } from "../parser";
+import {
+  CellRangeInput,
+  CellReferenceInput,
+  EquationInput,
+  parseInput,
+} from "../parser";
 
 type Cell = string;
 type Error = {
   type: "error";
   errorMessage: string;
 };
-export type Value = number | string | Error | undefined;
+export type Value = number | string | Error | undefined | Value[][];
 
 export class Graph {
   derivedFromMap: Record<Cell, Set<Cell>> = {};
@@ -34,6 +39,11 @@ export class Graph {
       case "cellReference":
         currentDependencies.add(Graph.#cellFromReference(expression));
         break;
+      case "cellRange":
+        for (const cell of Graph.#cellsForRange(expression).flat()) {
+          currentDependencies.add(Graph.#cellFromReference(cell));
+        }
+        break;
       case "function":
         for (const argument of expression.functionArguments) {
           Graph.#getAllDependencies(argument, currentDependencies);
@@ -58,6 +68,9 @@ export class Graph {
     }
 
     this.derivedFromMap[cell] = Graph.#getAllDependencies(expression);
+    if (this.derivedFromMap[cell].has(cell)) {
+      this.derivedFromMap[cell] = new Set();
+    }
 
     for (const dependency of this.derivedFromMap[cell]) {
       if (!(dependency in this.dependentsMap)) {
@@ -68,7 +81,43 @@ export class Graph {
     }
   }
 
-  #evaluateExpression(expression: EquationInput | undefined): Value {
+  static #cellsForRange(range: CellRangeInput): CellReferenceInput[][] {
+    const startColumn = range.start.column,
+      endColumn = range.end.column;
+    if (startColumn > endColumn) {
+      throw new Error("Start column must be before end column");
+    }
+
+    const startRow = range.start.row,
+      endRow = range.end.row;
+    if (startRow > endRow) {
+      throw new Error("Start row must be before end row");
+    }
+
+    const output: CellReferenceInput[][] = [];
+    for (
+      let column = startColumn;
+      column <= endColumn;
+      column = String.fromCharCode(column.charCodeAt(0) + 1)
+    ) {
+      let outputRow: CellReferenceInput[] = [];
+      for (let row = startRow; row <= endRow; row++) {
+        outputRow.push({
+          type: "cellReference",
+          column,
+          row,
+        });
+      }
+      output.push(outputRow);
+    }
+
+    return output;
+  }
+
+  #evaluateExpression(
+    expression: EquationInput | undefined,
+    currentCell: Cell
+  ): Value {
     if (!expression) {
       return undefined;
     }
@@ -80,6 +129,23 @@ export class Graph {
         return expression.value;
       case "cellReference":
         return this.evaluationMap[Graph.#cellFromReference(expression)];
+      case "cellRange":
+        const cells = Graph.#cellsForRange(expression);
+        if (
+          cells
+            .flat()
+            .some((cell) => Graph.#cellFromReference(cell) === currentCell)
+        ) {
+          return {
+            type: "error",
+            errorMessage: "Self referencing cell: " + currentCell,
+          };
+        }
+        return cells.map((row) =>
+          row.map((cell) =>
+            this.#evaluateExpression(cell, Graph.#cellFromReference(cell))
+          )
+        );
       case "function":
         const fn = this.methodMap[expression.functionName.toUpperCase()];
         if (!fn) {
@@ -90,7 +156,7 @@ export class Graph {
         }
 
         const args = expression.functionArguments.map((arg) =>
-          this.#evaluateExpression(arg)
+          this.#evaluateExpression(arg, currentCell)
         );
         return fn(...args);
       case "error":
@@ -111,8 +177,15 @@ export class Graph {
 
   evaluateCellAndAllDependencies(cell: Cell) {
     this.evaluationMap[cell] = this.#evaluateExpression(
-      this.expressionMap[cell]
+      this.expressionMap[cell],
+      cell
     );
+    if (Array.isArray(this.evaluationMap[cell])) {
+      this.evaluationMap[cell] = {
+        type: "error",
+        errorMessage: "Cannot return cell range as value",
+      };
+    }
     for (const dependent of this.dependentsMap[cell] ?? []) {
       this.evaluateCellAndAllDependencies(dependent);
     }

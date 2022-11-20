@@ -53,6 +53,24 @@ describe("graph", () => {
       expect(graph.valueOfCell("A1")).toBe("str");
     });
 
+    it("will error when given a cell range", () => {
+      graph.updateCell("C1", "A1:B2");
+      expect(graph.valueOfCell("C1")).toHaveProperty("errorMessage");
+    });
+
+    it("will evaluate a cell range", () => {
+      graph = new Graph({
+        FLAT_ADD: (arg) => {
+          console.log(arg);
+          return (arg as number[][]).flat(2).reduce((cur, prev) => cur + prev);
+        },
+      });
+      graph.updateCell("A1", "1");
+      graph.updateCell("A2", "2");
+      graph.updateCell("A3", "(FLAT_ADD A1:A2)");
+      expect(graph.valueOfCell("A3")).toBe(3);
+    });
+
     it("will allow clearing a cell", () => {
       graph.updateCell("A1", "2");
       graph.updateCell("A1", "");

@@ -14,6 +14,12 @@ export interface CellReferenceInput {
   row: number;
 }
 
+export interface CellRangeInput {
+  type: "cellRange";
+  start: CellReferenceInput;
+  end: CellReferenceInput;
+}
+
 export interface FunctionInput {
   type: "function";
   functionName: string;
@@ -28,6 +34,7 @@ export interface ErrorInput {
 export type EquationInput =
   | NumberInput
   | CellReferenceInput
+  | CellRangeInput
   | FunctionInput
   | ErrorInput
   | StringInput;
@@ -93,14 +100,27 @@ function tokenizeInput(input: string) {
   return tokens;
 }
 
-function parseValue(value: string): NumberInput | CellReferenceInput {
-  if (/^[0-9]+$/.test(value)) {
+function parseValue(
+  value: string
+): NumberInput | CellReferenceInput | CellRangeInput {
+  const NUM_REGEX = /^[0-9]+$/;
+  const CELL_REF_REGEX = /^([A-Z]+)([0-9]+)$/;
+  const CELL_RANGE_REGEX = /^([A-Z]+[0-9]+)\:([A-Z]+[0-9]+)$/;
+
+  if (NUM_REGEX.test(value)) {
     return {
       type: "number",
       value: parseInt(value),
     };
-  } else if (/^[A-Z]+[0-9]+/.test(value)) {
-    const result = /^([A-Z]+)([0-9]+)/.exec(value);
+  } else if (CELL_RANGE_REGEX.test(value)) {
+    const [startGroup, endGroup] = CELL_RANGE_REGEX.exec(value)!.slice(1);
+    return {
+      type: "cellRange",
+      start: parseValue(startGroup) as CellReferenceInput,
+      end: parseValue(endGroup) as CellReferenceInput,
+    };
+  } else if (CELL_REF_REGEX.test(value)) {
+    const result = CELL_REF_REGEX.exec(value);
     const column = result![1],
       row = result![2];
     return {

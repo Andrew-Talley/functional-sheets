@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CellRangeInput,
   CellReferenceInput,
   FunctionInput,
   NumberInput,
@@ -29,6 +30,15 @@ describe("parser", () => {
     expect(parsedResult.type).toBe("cellReference");
     expect(parsedResult.column).toBe("A");
     expect(parsedResult.row).toBe(1);
+  });
+
+  it("will support a cell range", () => {
+    const parsedResult = parseInput("A1:B2") as CellRangeInput;
+    expect(parsedResult.type).toBe("cellRange");
+    expect(parsedResult.start.column).toBe("A");
+    expect(parsedResult.start.row).toBe(1);
+    expect(parsedResult.end.column).toBe("B");
+    expect(parsedResult.end.row).toBe(2);
   });
 
   describe("functions", () => {

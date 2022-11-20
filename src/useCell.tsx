@@ -50,9 +50,10 @@ export function useCellValue(cell: string) {
     [spreadsheetId, cell, dbCell?.id]
   );
 
+  // Ensure graph is updated on mount
   useEffect(() => {
     graph.updateCell(cell, value);
-  });
+  }, [cell, value]);
 
   const renderedValue = graph.valueOfCell(cell);
 
